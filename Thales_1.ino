@@ -3,7 +3,7 @@
   Thursday, November 17, 2016
   Thales Project Arduino Competition
 
-  Reads sensors (a distance sensor, a force sensor, and two photoresistors)
+  Reads sensors (a distance sensor, a force sensor, and three photoresistors)
   and turns on/off red and green LEDs based on analog sensor value readings.
 
   Designed for use with a train system to prevent people from getting hit
