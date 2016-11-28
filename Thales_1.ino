@@ -2,22 +2,22 @@
   Created by Rachel Misbin
   Thursday, November 17, 2016
   Thales Project Arduino Competition
-
   Reads sensors (a distance sensor, a force sensor, and three photoresistors)
   and turns on/off red and green LEDs based on analog sensor value readings.
-
   Designed for use with a train system to prevent people from getting hit
   by trains after falling on the tracks.
 */
+
+const unsigned long 
 
 const int distancePin = 0;          // distance pin:             analog 0
 const int fsrPin = 1;               // force sensitive resistor: analog 1
 const int photo1 = 2;               // photoresistor 1 pin:      analog 2
 const int photo2 = 3;               // photoresistor 2 pin:      analog 3
-const int photo3 = 3;               // photoresistor 3 pin:      analog 4
+const int photo3 = 4;               // photoresistor 3 pin:      analog 4
+const int buzzerPin = 4;            // buzzer pin:               digital 4
 const int GreenLED = 5;             // green LED:                digital 5
 const int RedLED = 6;               // red LED:                  digital 6
-const int buzzerPin = 4;            // buzzer pin:               digital 7
 
 boolean distanceAlert = false;      // distance alert  
 boolean forceAlert = false;         // force alert
@@ -82,20 +82,17 @@ void loop() {
     noTone(buzzerPin);              // set buzzer to off
   }
  
-  // 5: Delay (REMOVE IF TRYING TO CATCH AN OBJECT PASSING BY)
-  //delay(2000);
 }
 
 // returns whether or not the distance is within valid range
 boolean checkDistance(float distance) { 
-  return distance > 20 ? true : false;  // modify conditions of range
+  return distance > 10 ? true : false;  // modify conditions of range
 }
 // returns whether or not the force is within valid range
 boolean checkForce(float force) {
-  return force > 500 && force < 1024 ? true : false; // modify conditions of range
+  return force > 10 ? true : false; // modify conditions of range
 }
 // returns whether or not the brightness is within range
 boolean checkPhotoresistor(float brightness) {
-  return brightness < 500 ? true : false;  // modify conditions of range
+  return brightness < 900 ? true : false;  // modify conditions of range
 }
-
