@@ -22,7 +22,6 @@ boolean forceAlert = false;         // force alert
 boolean photoAlert_1 = false;       // photoresistor 1 alert
 boolean photoAlert_2 = false;       // photoresistor 2 alert
 boolean photoAlert_3 = false;       // photoresistor 3 alert
-boolean primaryDelay = false;
 boolean ALERT;
 
 float force;                        // stores force from force sensor
@@ -31,10 +30,8 @@ float photoValue_1;                 // stores value from photoresistor 1
 float photoValue_2;                 // stores value from photoresistor 2
 float photoValue_3;                 // stores value from photoresistor 3
 
-const unsigned long DELAY = 5000;   // 5 second FSR delay
-unsigned long fsrDelay;
-unsigned long photoDelay;
-
+boolean fsrSTOP = false;
+unsigned long fsrTimer = 0;
 
 void setup() {
   pinMode(GreenLED, OUTPUT);    
@@ -44,12 +41,20 @@ void setup() {
 }
 
 void loop() {
-  // 1: Read analog sensor values
-  force = analogRead(fsrPin);           
+
+  // 1: Read analog sensor values;
+  if (analogRead(fsrPin) > 10 && !fsrSTOP) {
+     fsrTimer = millis();
+     fsrSTOP = true;
+  }
+  if (millis() - fsrTimer > 5000 && fsrSTOP) {
+      fsrSTOP = false;
+      force = analogRead(fsrPin);
+  }
   distance = 12343.85*pow(analogRead(distancePin), -1.15);  // scaled to cm
   photoValue_1 = analogRead(photo1);      
   photoValue_2 = analogRead(photo2);    
-  photoValue_3 = analogRead(photo3);  
+  photoValue_3 = analogRead(photo3); 
 
   // 2: Display sensor values on serial monitor
   Serial.print("Distance: "); Serial.print(distance); Serial.println(" cm");
@@ -60,25 +65,11 @@ void loop() {
 
   // 3: Calculate alerts
   distanceAlert = checkDistance(distance);            
-  forceAlert = checkForce(force); 
-  if (forceAlert) {
-    fsrDelay = millis();                
-  }
+  forceAlert = checkForce(force);                    
   photoAlert_1 = checkPhotoresistor(photoValue_1);    
   photoAlert_2 = checkPhotoresistor(photoValue_2);   
   photoAlert_3 = checkPhotoresistor(photoValue_3);
-  if (photoAlert_1 || photoAlert_2 || photoAlert_3) {
-    photoDelay = millis();
-  }
-
-  if (abs(photoDelay - fsrDelay) < DELAY) {
-    primaryDelay = true;
-  }
-  else {
-    primaryDelay = false;
-  }
-  
-  ALERT = distanceAlert && forceAlert && (photoAlert_1 || photoAlert_2 || photoAlert_3) && primaryDelay;
+  ALERT = distanceAlert && forceAlert && (photoAlert_1 || photoAlert_2 || photoAlert_3);
 
   // 4: Act on alerts
   while (!distanceAlert) {
@@ -98,6 +89,7 @@ void loop() {
     digitalWrite(RedLED, LOW);
     noTone(buzzerPin);              // set buzzer to off
   }
+ 
 }
 
 // returns whether or not the distance is within valid range
