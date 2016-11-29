@@ -17,73 +17,93 @@ const int buzzerPin = 4;            // buzzer pin:               digital 4
 const int GreenLED = 5;             // green LED:                digital 5
 const int RedLED = 6;               // red LED:                  digital 6
 
-boolean distanceAlert = false;      // distance alert  
+boolean distanceAlert = false;      // distance alert
 boolean forceAlert = false;         // force alert
 boolean photoAlert_1 = false;       // photoresistor 1 alert
 boolean photoAlert_2 = false;       // photoresistor 2 alert
 boolean photoAlert_3 = false;       // photoresistor 3 alert
 boolean ALERT;
 
-float force;                        // stores force from force sensor
+float force = 0;                    // stores force from force sensor
 float distance;                     // stores distance from distance sensor
 float photoValue_1;                 // stores value from photoresistor 1
 float photoValue_2;                 // stores value from photoresistor 2
 float photoValue_3;                 // stores value from photoresistor 3
 
+boolean fsrSTOP = false;
+unsigned long fsrTimer = 0;
+
 void setup() {
-  pinMode(GreenLED, OUTPUT);    
-  pinMode(RedLED, OUTPUT);         
-  pinMode(buzzerPin, OUTPUT);         
-  Serial.begin(9600);             
+  pinMode(GreenLED, OUTPUT);
+  pinMode(RedLED, OUTPUT);
+  pinMode(buzzerPin, OUTPUT);
+  Serial.begin(9600);
 }
 
 void loop() {
+  // 1: Read analog sensor values;
+  if (analogRead(fsrPin) > 40 && !fsrSTOP) {
+    force = analogRead(fsrPin);
+    fsrTimer = millis();
+    fsrSTOP = true;
+  }
+  if (millis() - fsrTimer > 5000 && fsrSTOP) {
+    fsrSTOP = false;
+    force = analogRead(fsrPin);
+  }
 
-  // 1: Read analog sensor values
-  force = analogRead(fsrPin);             
-  distance = 12343.85*pow(analogRead(distancePin), -1.15);  // scaled to cm
-  photoValue_1 = analogRead(photo1);      
-  photoValue_2 = analogRead(photo2);    
-  photoValue_3 = analogRead(photo3);  
+  Serial.print(fsrSTOP); Serial.println();
+  
+  distance = 12343.85 * pow(analogRead(distancePin), -1.15); // scaled to cm
+  photoValue_1 = analogRead(photo1);
+  photoValue_2 = analogRead(photo2);
+  photoValue_3 = analogRead(photo3);
 
   // 2: Display sensor values on serial monitor
-  Serial.print("Distance: "); Serial.print(distance); Serial.println(" cm");
-  Serial.print("Force: "); Serial.println(force); 
-  Serial.print("Photoresistor 1: "); Serial.println(photoValue_1);
-  Serial.print("Photoresistor 2: "); Serial.println(photoValue_2);
-  Serial.print("Photoresistor 3: "); Serial.println(photoValue_3);
+  //Serial.print("Distance: "); Serial.print(distance); Serial.println(" cm");
+  //Serial.print("Photoresistor 1: "); Serial.println(photoValue_1);
+  //Serial.print("Photoresistor 2: "); Serial.println(photoValue_2);
+  //Serial.print("Photoresistor 3: "); Serial.println(photoValue_3);
 
   // 3: Calculate alerts
-  distanceAlert = checkDistance(distance);            
-  forceAlert = checkForce(force);                    
-  photoAlert_1 = checkPhotoresistor(photoValue_1);    
-  photoAlert_2 = checkPhotoresistor(photoValue_2);   
+  distanceAlert = checkDistance(distance);
+  forceAlert = checkForce(force);
+  photoAlert_1 = checkPhotoresistor(photoValue_1);
+  photoAlert_2 = checkPhotoresistor(photoValue_2);
   photoAlert_3 = checkPhotoresistor(photoValue_3);
   ALERT = distanceAlert && forceAlert && (photoAlert_1 || photoAlert_2 || photoAlert_3);
 
   // 4: Act on alerts
   while (!distanceAlert) {
-    distance = 12343.85*pow(analogRead(distancePin), -1.15);
-    distanceAlert = checkDistance(distance); 
+    distance = 12343.85 * pow(analogRead(distancePin), -1.15);
+    distanceAlert = checkDistance(distance);
     digitalWrite(RedLED, LOW);
     digitalWrite(GreenLED, LOW);
     noTone(buzzerPin);
   }
-  if (ALERT) {         
-    digitalWrite(RedLED, HIGH);     // RED led is on; green is off
-    digitalWrite(GreenLED, LOW); 
-    tone(buzzerPin, 440);           // set buzzer tone to 440 Hz
+  if (ALERT) {
+    //while ((photoAlert_1 || photoAlert_2 || photoAlert_3) && !distanceAlert) {
+      //photoAlert_1 = checkPhotoresistor(analogRead(photo1));
+      //photoAlert_2 = checkPhotoresistor(analogRead(photo2));
+      //photoAlert_3 = checkPhotoresistor(analogRead(photo3));
+      //distanceAlert = checkDistance(12343.85 * pow(analogRead(distancePin), -1.15));
+      
+      digitalWrite(RedLED, HIGH);     // RED led is on; green is off
+      digitalWrite(GreenLED, LOW);
+      tone(buzzerPin, 440);           // set buzzer tone to 440 Hz
+    //}
+    
   }
-  else {   
+  else {
     digitalWrite(GreenLED, HIGH);   // GREEN led is on; red is off
     digitalWrite(RedLED, LOW);
     noTone(buzzerPin);              // set buzzer to off
   }
- 
+
 }
 
 // returns whether or not the distance is within valid range
-boolean checkDistance(float distance) { 
+boolean checkDistance(float distance) {
   return distance > 10 ? true : false;  // modify conditions of range
 }
 // returns whether or not the force is within valid range
