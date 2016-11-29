@@ -8,8 +8,6 @@
   by trains after falling on the tracks.
 */
 
-const unsigned long 
-
 const int distancePin = 0;          // distance pin:             analog 0
 const int fsrPin = 1;               // force sensitive resistor: analog 1
 const int photo1 = 2;               // photoresistor 1 pin:      analog 2
