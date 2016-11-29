@@ -78,8 +78,7 @@ void loop() {
     primaryDelay = false;
   }
   
-  //ALERT = distanceAlert && forceAlert && (photoAlert_1 || photoAlert_2 || photoAlert_3);
-  ALERT = distanceAlert && primaryDelay;
+  ALERT = distanceAlert && forceAlert && (photoAlert_1 || photoAlert_2 || photoAlert_3) && primaryDelay;
 
   // 4: Act on alerts
   while (!distanceAlert) {
