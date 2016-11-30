@@ -82,24 +82,21 @@ void loop() {
     noTone(buzzerPin);
   }
   if (ALERT) {
-    //while ((photoAlert_1 || photoAlert_2 || photoAlert_3) && !distanceAlert) {
-      //photoAlert_1 = checkPhotoresistor(analogRead(photo1));
-      //photoAlert_2 = checkPhotoresistor(analogRead(photo2));
-      //photoAlert_3 = checkPhotoresistor(analogRead(photo3));
-      //distanceAlert = checkDistance(12343.85 * pow(analogRead(distancePin), -1.15));
+    while ((photoAlert_1 || photoAlert_2 || photoAlert_3) && (distance > 10)) {
+      distance = 12343.85 * pow(analogRead(distancePin), -1.15); // scaled to cm
+      photoAlert_1 = checkPhotoresistor(analogRead(photo1));
+      photoAlert_2 = checkPhotoresistor(analogRead(photo2));
+      photoAlert_3 = checkPhotoresistor(analogRead(photo3));
       
       digitalWrite(RedLED, HIGH);     // RED led is on; green is off
       digitalWrite(GreenLED, LOW);
       tone(buzzerPin, 440);           // set buzzer tone to 440 Hz
-    //}
-    
-  }
-  else {
+    }
+  } else {
     digitalWrite(GreenLED, HIGH);   // GREEN led is on; red is off
     digitalWrite(RedLED, LOW);
     noTone(buzzerPin);              // set buzzer to off
   }
-
 }
 
 // returns whether or not the distance is within valid range
