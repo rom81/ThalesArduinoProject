@@ -1,0 +1,91 @@
+/*
+  Created by Rachel Misbin
+  Tuesday, November 29, 2016
+  Thales Project Arduino Competition
+  
+  Reads sensors (a distance sensor, a force sensor, and three photoresistors)
+  and turns on/off red and green LEDs based on analog sensor value readings.
+  Designed for use with a train system to prevent people from getting hit
+  by trains after falling on the tracks.
+*/
+
+const int distancePin = 0;          // distance pin:             analog 0
+const int fsrPin = 1;               // force sensitive resistor: analog 1
+const int photo1 = 2;               // photoresistor 1 pin:      analog 2
+const int photo2 = 3;               // photoresistor 2 pin:      analog 3
+const int photo3 = 4;               // photoresistor 3 pin:      analog 4
+const int buzzerPin = 4;            // buzzer pin:               digital 4
+const int GreenLED = 5;             // green LED:                digital 5
+const int RedLED = 6;               // red LED:                  digital 6
+
+boolean ALERT;
+
+float force = 0, distance, photoValue_1, photoValue_2, photoValue_3;
+
+boolean fsrSTOP = false;
+unsigned long fsrTimer = 0, buzzerTimer = 0;
+int toneVal = 0;
+
+void setup() {
+  pinMode(GreenLED, OUTPUT);
+  pinMode(RedLED, OUTPUT);
+  pinMode(buzzerPin, OUTPUT);
+  Serial.begin(9600);
+}
+
+void loop() {
+  // 1: Retain force value for 5000ms if it's greater than 40 and hasn't 
+  // already retained a value within 5000ms
+  if (analogRead(fsrPin) > 40 && !fsrSTOP) {
+    force = analogRead(fsrPin);
+    fsrTimer = millis();
+    fsrSTOP = true;
+  }
+  if (millis() - fsrTimer > 5000 && fsrSTOP) {
+    fsrSTOP = false;
+    force = analogRead(fsrPin);
+  }
+
+  // 2: Read sensor values
+  distance = 12343.85 * pow(analogRead(distancePin), -1.15); // scaled to cm
+
+  // 3: Calculate alert
+  ALERT = checkDistance(distance) && checkForce(force) && 
+         (checkPhotoresistor(analogRead(photo1)) || 
+         checkPhotoresistor(analogRead(photo2))|| 
+         checkPhotoresistor(analogRead(photo3)));
+
+  // 4: Act on alerts
+  while (!checkDistance(distance)) {
+    distance = 12343.85 * pow(analogRead(distancePin), -1.15);
+    digitalWrite(RedLED, LOW);
+    digitalWrite(GreenLED, LOW);
+    noTone(buzzerPin);
+  }
+  if (ALERT) {
+    while ((checkPhotoresistor(analogRead(photo1)) || 
+            checkPhotoresistor(analogRead(photo2)) || 
+            checkPhotoresistor(analogRead(photo3))) && checkDistance(distance)) {
+      distance = 12343.85 * pow(analogRead(distancePin), -1.15); // scaled to cm
+      digitalWrite(RedLED, HIGH);     // RED led is on; green is off
+      digitalWrite(GreenLED, LOW);
+      if (millis() - buzzerTimer > 500) {
+        buzzerTimer = millis();
+        if (toneVal == 1400) {
+             toneVal = 2000;
+        } else {
+            toneVal = 1400;
+        }
+        tone(buzzerPin, toneVal);
+      }
+    }
+  } else {
+    digitalWrite(GreenLED, HIGH);   // GREEN led is on; red is off
+    digitalWrite(RedLED, LOW);
+    noTone(buzzerPin);              
+  }
+}
+
+boolean checkDistance(float dist) { return dist > 10 ? true : false; }
+boolean checkForce(float force)   {return force > 10 ? true : false; }
+boolean checkPhotoresistor(float b) { return b < 900 ? true : false; }
