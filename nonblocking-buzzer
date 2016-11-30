@@ -1,0 +1,111 @@
+/*
+  Created by Rachel Misbin
+  Thursday, November 17, 2016
+  Thales Project Arduino Competition
+  Reads sensors (a distance sensor, a force sensor, and three photoresistors)
+  and turns on/off red and green LEDs based on analog sensor value readings.
+  Designed for use with a train system to prevent people from getting hit
+  by trains after falling on the tracks.
+*/
+
+const int distancePin = 0;          // distance pin:             analog 0
+const int fsrPin = 1;               // force sensitive resistor: analog 1
+const int photo1 = 2;               // photoresistor 1 pin:      analog 2
+const int photo2 = 3;               // photoresistor 2 pin:      analog 3
+const int photo3 = 4;               // photoresistor 3 pin:      analog 4
+const int buzzerPin = 4;            // buzzer pin:               digital 4
+const int GreenLED = 5;             // green LED:                digital 5
+const int RedLED = 6;               // red LED:                  digital 6
+
+boolean distanceAlert = false, forceAlert = false, photoAlert_1 = false;       
+boolean photoAlert_2 = false, photoAlert_3 = false, ALERT;
+
+float force = 0;                    // stores force from force sensor
+float distance;                     // stores distance from distance sensor
+float photoValue_1;                 // stores value from photoresistor 1
+float photoValue_2;                 // stores value from photoresistor 2
+float photoValue_3;                 // stores value from photoresistor 3
+
+boolean fsrSTOP = false;
+unsigned long fsrTimer = 0;
+unsigned long buzzerTimer = 0;
+int toneVal = 0;
+
+void setup() {
+  pinMode(GreenLED, OUTPUT);
+  pinMode(RedLED, OUTPUT);
+  pinMode(buzzerPin, OUTPUT);
+  Serial.begin(9600);
+}
+
+void loop() {
+  // 1: Read analog sensor values;
+  if (analogRead(fsrPin) > 40 && !fsrSTOP) {
+    force = analogRead(fsrPin);
+    fsrTimer = millis();
+    fsrSTOP = true;
+  }
+  if (millis() - fsrTimer > 5000 && fsrSTOP) {
+    fsrSTOP = false;
+    force = analogRead(fsrPin);
+  }
+
+  Serial.print(fsrSTOP); Serial.println();
+  
+  distance = 12343.85 * pow(analogRead(distancePin), -1.15); // scaled to cm
+  photoValue_1 = analogRead(photo1);
+  photoValue_2 = analogRead(photo2);
+  photoValue_3 = analogRead(photo3);
+
+  // 2: Display sensor values on serial monitor
+  //Serial.print("Distance: "); Serial.print(distance); Serial.println(" cm");
+  //Serial.print("Photoresistor 1: "); Serial.println(photoValue_1);
+  //Serial.print("Photoresistor 2: "); Serial.println(photoValue_2);
+  //Serial.print("Photoresistor 3: "); Serial.println(photoValue_3);
+
+  // 3: Calculate alerts
+  distanceAlert = checkDistance(distance);
+  forceAlert = checkForce(force);
+  photoAlert_1 = checkPhotoresistor(photoValue_1);
+  photoAlert_2 = checkPhotoresistor(photoValue_2);
+  photoAlert_3 = checkPhotoresistor(photoValue_3);
+  ALERT = distanceAlert && forceAlert && (photoAlert_1 || photoAlert_2 || photoAlert_3);
+
+  // 4: Act on alerts
+  while (!checkDistance(distance)) {
+    distance = 12343.85 * pow(analogRead(distancePin), -1.15);
+    digitalWrite(RedLED, LOW);
+    digitalWrite(GreenLED, LOW);
+    noTone(buzzerPin);
+  }
+  if (ALERT) {
+    while ((checkPhotoresistor(analogRead(photo1)) || checkPhotoresistor(analogRead(photo2)) || checkPhotoresistor(analogRead(photo3))) && checkDistance(distance)) {
+      distance = 12343.85 * pow(analogRead(distancePin), -1.15); // scaled to cm
+      digitalWrite(RedLED, HIGH);     // RED led is on; green is off
+      digitalWrite(GreenLED, LOW);
+      if (millis() - buzzerTimer > 500) {
+        buzzerTimer = millis();
+        if (toneVal == 1400) {
+             toneVal = 2000;
+        } else {
+            toneVal = 1400;
+        }
+        tone(buzzerPin, toneVal);
+      }
+    }
+  } else {
+    digitalWrite(GreenLED, HIGH);   // GREEN led is on; red is off
+    digitalWrite(RedLED, LOW);
+    noTone(buzzerPin);              // set buzzer to off
+  }
+}
+
+boolean checkDistance(float distance) {
+  return distance > 10 ? true : false;  
+}
+boolean checkForce(float force) {
+  return force > 10 ? true : false;
+}
+boolean checkPhotoresistor(float brightness) {
+  return brightness < 900 ? true : false; 
+}
